@@ -23,7 +23,7 @@
 #>
 param(
     [Parameter(Mandatory = $true, Position = 1)]
-    [ValidateScript({Test-Path $_ })]
+    [ValidateScript( { Test-Path $_ })]
     [string]
     $ScriptDirectory,
 
@@ -41,15 +41,11 @@ param(
 
     [Parameter(Mandatory = $true, Position = 5)]
     [string]
-    $DbPassword,
-
-    [Parameter()]
-    [string]
-    $WarningActionPreference = "SilentlyContinue"
+    $DbPassword
 )
 
 #Validate we have the SimplySql Module installed, install and import it if not
-if (!(Get-InstalledModule SimplySql)) { Install-Module SimplySql -Force }
+if (!(Get-InstalledModule SimplySql -ErrorAction SilentlyContinue)) { Install-Module SimplySql -Force }
 Import-Module SimplySql
 
 #Attempt to establish connection to Database
@@ -58,8 +54,8 @@ $securePassword = ConvertTo-SecureString $DbPassword -AsPlainText -Force
 $credentialObject = New-Object System.Management.Automation.PSCredential ($DbUser, $securePassword)
 
 $mysqlConnectionParams = @{
-    Server   = $DbHost
-    Database = $DbName
+    Server     = $DbHost
+    Database   = $DbName
     Credential = $credentialObject
 }
 
@@ -67,24 +63,24 @@ try { Open-MySqlConnection @mysqlConnectionParams }
 catch { return  "Error - Establishing connection to Database $DbName on Server $DbHost" }
 
 #Get Script files information from the Script directory
-$orderedTsqlScripts = (Get-ChildItem $ScriptDirectory | ?{($_ -like "*.sql") -and ($_ -match "\d+")} | Sort Name).Name
+$orderedTsqlScripts = (Get-ChildItem $ScriptDirectory | ? { ($_ -like "*.sql") -and ($_ -match "\d+") } | Sort Name).Name
 
 $filesExecuted = 0
-foreach ($individualScript in $orderedTSqlScripts){
+foreach ($individualScript in $orderedTSqlScripts) {
 
     #We retrieve the Db version in this loop as the tsql scripts may update the Db, hence the need to refresh the variable with each iteration
     $dbVersion = (Invoke-SqlQuery -query "SELECT version FROM versionTable").version
-    if ($null -eq $dbVersion) { return "Error - Unable to retrieve Database version"}
+    if ($null -eq $dbVersion) { return "Error - Unable to retrieve Database version" }
 
     #Using a regular expression to remove any non digits from the file name, so we can retrieve the version from the filename
-    $individualScriptVersion = $individualScript -replace "[^0-9]" ,""
+    $individualScriptVersion = $individualScript -replace "[^0-9]" , ""
 
 
     #We will only run the tsql scripts if the filename version is higher than the current db version
-    if ($individualScriptVersion -gt $dbVersion){
+    if ($individualScriptVersion -gt $dbVersion) {
 
         #retrieve TSql script content
-        $tsqlScriptContent =  Get-Content "$ScriptDirectory\$individualScript"
+        $tsqlScriptContent = Get-Content "$ScriptDirectory\$individualScript"
         #Execute script against database
 
         Write-Host "[Tsql Script] " -ForegroundColor Yellow -NoNewLine
