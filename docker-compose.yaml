@@ -1,0 +1,15 @@
+version: "3.3"
+services:
+  database:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      MYSQL_DATABASE: "ecs_test_db"
+      MYSQL_USERNAME: "root"
+      MYSQL_ROOT_PASSWORD: "password"
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
